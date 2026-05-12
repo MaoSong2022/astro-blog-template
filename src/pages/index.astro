@@ -1,0 +1,223 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import {
+  SITE_DESCRIPTION,
+  SITE_SLOGAN,
+  SITE_TITLE,
+} from "../consts";
+import { SITE_NEWS } from "../data/site-news";
+import { browseCategoryHref, browseTagHref } from "../utils/browse-links";
+import { parseArticleGlob } from "../utils/site-articles";
+import { getAllArticleBundleLastModifiedIso } from "../utils/article-modified";
+
+const articleGlob = import.meta.glob<{ frontmatter: Record<string, unknown> }>(
+  "../content/*/article.{md,mdx}",
+  { eager: true },
+);
+
+const modifiedBySlug = await getAllArticleBundleLastModifiedIso();
+const articles = await parseArticleGlob(articleGlob, modifiedBySlug);
+const latest = articles.slice(0, 4);
+
+const newsItems = [...SITE_NEWS].sort((a, b) => {
+  const ta = Date.parse(a.date);
+  const tb = Date.parse(b.date);
+  if (!Number.isNaN(ta) && !Number.isNaN(tb) && tb !== ta) return tb - ta;
+  return String(b.date).localeCompare(String(a.date));
+});
+
+function newsDateLabel(raw: string): string {
+  const t = Date.parse(raw);
+  if (!Number.isNaN(t)) {
+    return new Date(t).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    });
+  }
+  return raw;
+}
+
+function newsDateIso(raw: string): string | undefined {
+  const t = Date.parse(raw);
+  if (Number.isNaN(t)) return undefined;
+  return new Date(t).toISOString().slice(0, 10);
+}
+---
+
+<BaseLayout pageTitle={SITE_TITLE} description={SITE_DESCRIPTION}>
+  <div class="site-hero">
+    <div class="site-hero__avatar">
+      <img
+        src="/avatar.svg"
+        alt={`Profile photo — ${SITE_TITLE}`}
+        width="192"
+        height="192"
+        loading="eager"
+        decoding="async"
+      />
+    </div>
+    <div class="site-hero__body">
+      <p class="site-slogan">{SITE_SLOGAN}</p>
+      <p class="site-lead">{SITE_DESCRIPTION}</p>
+    </div>
+  </div>
+
+  <div class="site-actions">
+    <a class="button button--ghost" href="/blog">Browse all posts</a>
+    <a class="button button--ghost" href="/about">About</a>
+  </div>
+
+  {
+    newsItems.length > 0 ? (
+      <section class="site-news" aria-labelledby="news-heading">
+        <h2 id="news-heading">News</h2>
+        <ul class="site-news__list">
+          {newsItems.map((item) => {
+            const isExternal =
+              item.href &&
+              (item.href.startsWith("http://") ||
+                item.href.startsWith("https://"));
+            const dateIso = newsDateIso(item.date);
+            return (
+              <li class="site-news__item">
+                <time
+                  class="site-news__date"
+                  {...(dateIso ? { datetime: dateIso } : {})}
+                >
+                  {newsDateLabel(item.date)}
+                </time>
+                <div class="site-news__body">
+                  {item.href ? (
+                    <a
+                      class="site-news__title-link"
+                      href={item.href}
+                      {...(isExternal
+                        ? {
+                            target: "_blank",
+                            rel: "noopener noreferrer",
+                          }
+                        : {})}
+                    >
+                      {item.title}
+                    </a>
+                  ) : (
+                    <span class="site-news__title">{item.title}</span>
+                  )}
+                  {item.summary ? (
+                    <p class="site-news__summary">{item.summary}</p>
+                  ) : null}
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+      </section>
+    ) : null
+  }
+
+  {
+    latest.length > 0 ? (
+      <section aria-labelledby="latest-heading">
+        <h2 id="latest-heading">Latest</h2>
+        <ul class="article-index">
+          {latest.map(
+            ({
+              url,
+              title,
+              displayDate,
+              description: desc,
+              category,
+              tags,
+            }) => (
+              <li class="article-index__item">
+                {category ? (
+                  <a
+                    class="article-index__category"
+                    href={browseCategoryHref(category)}
+                  >
+                    {category}
+                  </a>
+                ) : null}
+                <a class="article-index__link" href={url}>
+                  {title}
+                </a>
+                {displayDate ? (
+                  <span class="article-index__meta">{displayDate}</span>
+                ) : null}
+                {desc ? <p class="article-index__desc">{desc}</p> : null}
+                {tags.length > 0 ? (
+                  <div class="article-index__tags">
+                    {tags.map((t) => (
+                      <a class="article-index__tag" href={browseTagHref(t)}>
+                        {t}
+                      </a>
+                    ))}
+                  </div>
+                ) : null}
+              </li>
+            ),
+          )}
+        </ul>
+      </section>
+    ) : null
+  }
+
+  <style>
+    @media (--bp-sm) {
+      .site-hero {
+        gap: var(--spacing-3);
+        margin-bottom: var(--spacing-5);
+      }
+
+      .site-hero__avatar {
+        width: 84px;
+        height: 84px;
+      }
+
+      .site-slogan {
+        font-size: 1.125rem;
+        line-height: 1.4;
+        margin-bottom: var(--spacing-2);
+      }
+
+      .site-lead {
+        font-size: 1rem;
+        line-height: 1.6;
+      }
+
+      .site-news__title-link,
+      .site-news__title {
+        font-size: 1rem;
+        line-height: 1.4;
+      }
+
+      .article-index__link {
+        font-size: 1rem;
+        line-height: 1.4;
+      }
+
+      .home-cta-primary {
+        min-height: 2.75rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        letter-spacing: 0.01em;
+        box-shadow: 0 6px 18px color-mix(in srgb, var(--primary-color) 26%, transparent);
+      }
+
+      .site-actions .button--ghost {
+        min-height: 2.5rem;
+      }
+    }
+
+    .site-news__title-link,
+    .site-news__title,
+    .article-index__link,
+    .article-index__desc {
+      overflow-wrap: anywhere;
+      word-break: normal;
+    }
+  </style>
+</BaseLayout>

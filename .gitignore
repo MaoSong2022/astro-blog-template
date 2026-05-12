@@ -1,0 +1,33 @@
+# build output
+dist/
+
+# generated types
+.astro/
+
+# dependencies
+node_modules/
+
+# logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# environment variables
+.env
+.env.*.local
+.env.production
+
+# editor / OS noise
+.DS_Store
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+
+# Yarn (we use npm by default)
+yarn.lock
+
+# Playwright (used by export scripts)
+playwright-report/
+test-results/

@@ -1,0 +1,275 @@
+<div class="d3-imagenet-model-performance"></div>
+
+<style>
+  .d3-imagenet-model-performance {
+    width: 100%;
+    position: relative;
+  }
+
+  .d3-imagenet-model-performance svg {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+
+  .d3-imagenet-model-performance .chart-tooltip {
+    position: absolute;
+    pointer-events: none;
+    background: var(--surface-bg);
+    color: var(--text-color);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    padding: 10px 12px;
+    font-size: 12px;
+    line-height: 1.35;
+    min-width: 220px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+    opacity: 0;
+    transform: translate(-9999px, -9999px);
+    transition: opacity 0.1s ease;
+    z-index: 10;
+  }
+
+  .d3-imagenet-model-performance .chart-tooltip-title {
+    font-weight: 700;
+    margin-bottom: 6px;
+  }
+
+  .d3-imagenet-model-performance .chart-note {
+    margin-top: 8px;
+    color: var(--muted-color);
+    font-size: 12px;
+  }
+</style>
+
+<script>
+  (() => {
+    const ensureD3 = (callback) => {
+      if (window.d3 && typeof window.d3.select === "function") {
+        callback();
+        return;
+      }
+      let script = document.getElementById("d3-cdn-script");
+      if (!script) {
+        script = document.createElement("script");
+        script.id = "d3-cdn-script";
+        script.src = "https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js";
+        document.head.appendChild(script);
+      }
+      script.addEventListener(
+        "load",
+        () => {
+          if (window.d3 && typeof window.d3.select === "function") callback();
+        },
+        { once: true },
+      );
+    };
+
+    const bootstrap = () => {
+      const scriptEl = document.currentScript;
+      let container = scriptEl ? scriptEl.previousElementSibling : null;
+      if (
+        !(container &&
+          container.classList &&
+          container.classList.contains("d3-imagenet-model-performance"))
+      ) {
+        const nodes = Array.from(
+          document.querySelectorAll(".d3-imagenet-model-performance"),
+        ).filter((el) => !(el.dataset && el.dataset.mounted === "true"));
+        container = nodes[nodes.length - 1] || null;
+      }
+      if (!container) return;
+      if (container.dataset) {
+        if (container.dataset.mounted === "true") return;
+        container.dataset.mounted = "true";
+      }
+
+      const tooltip = document.createElement("div");
+      tooltip.className = "chart-tooltip";
+      container.appendChild(tooltip);
+
+      const note = document.createElement("div");
+      note.className = "chart-note";
+      note.textContent = "Bubble size represents model parameters (B).";
+      container.appendChild(note);
+
+      const svg = d3.select(container).append("svg");
+      const g = svg.append("g");
+      const gXAxis = g.append("g");
+      const gYAxis = g.append("g");
+      const gGrid = g.append("g");
+      const gDots = g.append("g");
+
+      const margin = { top: 12, right: 20, bottom: 48, left: 58 };
+      const color = d3.scaleOrdinal(d3.schemeTableau10);
+      const x = d3.scaleLinear();
+      const y = d3.scaleLinear();
+      const r = d3.scaleSqrt();
+
+      function formatParamB(value) {
+        if (!Number.isFinite(value)) return "N/A";
+        return `${value.toFixed(value >= 10 ? 0 : 1)}B`;
+      }
+
+      function formatAcc(value) {
+        if (!Number.isFinite(value)) return "N/A";
+        return `${value.toFixed(2)}%`;
+      }
+
+      function draw(data) {
+        const width = container.clientWidth || 820;
+        const height = Math.max(360, Math.round(width * 0.58));
+        const innerWidth = width - margin.left - margin.right;
+        const innerHeight = height - margin.top - margin.bottom;
+
+        svg.attr("width", width).attr("height", height);
+        g.attr("transform", `translate(${margin.left},${margin.top})`);
+
+        const yearExtent = d3.extent(data, (d) => d.year);
+        const accExtent = d3.extent(data, (d) => d.imagenet_top1);
+        const paramsExtent = d3.extent(data, (d) => d.params_billion);
+
+        x.domain([yearExtent[0] - 0.2, yearExtent[1] + 0.2]).range([0, innerWidth]);
+        y.domain([accExtent[0] - 1.2, accExtent[1] + 1.2]).nice().range([innerHeight, 0]);
+        r.domain(paramsExtent).range([6, 34]);
+        color.domain(Array.from(new Set(data.map((d) => d.affiliation))));
+
+        const gridTicks = y.ticks(6);
+        const gridLines = gGrid.selectAll("line").data(gridTicks, (d) => d);
+        gridLines
+          .enter()
+          .append("line")
+          .merge(gridLines)
+          .attr("x1", 0)
+          .attr("x2", innerWidth)
+          .attr("y1", (d) => y(d))
+          .attr("y2", (d) => y(d))
+          .attr("stroke", "var(--border-color)")
+          .attr("stroke-opacity", 0.45);
+        gridLines.exit().remove();
+
+        gXAxis
+          .attr("transform", `translate(0, ${innerHeight})`)
+          .call(
+            d3
+              .axisBottom(x)
+              .ticks(Math.min(8, data.length))
+              .tickFormat((d) => `${Math.round(d)}`),
+          );
+
+        gYAxis.call(d3.axisLeft(y).ticks(6).tickFormat((d) => `${d}%`));
+
+        g.selectAll(".axis-label").remove();
+        g.append("text")
+          .attr("class", "axis-label")
+          .attr("x", innerWidth / 2)
+          .attr("y", innerHeight + 40)
+          .attr("text-anchor", "middle")
+          .attr("fill", "var(--muted-color)")
+          .style("font-size", "12px")
+          .text("Published Year");
+
+        g.append("text")
+          .attr("class", "axis-label")
+          .attr("transform", "rotate(-90)")
+          .attr("x", -innerHeight / 2)
+          .attr("y", -42)
+          .attr("text-anchor", "middle")
+          .attr("fill", "var(--muted-color)")
+          .style("font-size", "12px")
+          .text("ImageNet Top-1 Accuracy (Zero-shot)");
+
+        const dots = gDots.selectAll("circle").data(data, (d) => d.model);
+        dots
+          .enter()
+          .append("circle")
+          .merge(dots)
+          .attr("cx", (d) => x(d.year))
+          .attr("cy", (d) => y(d.imagenet_top1))
+          .attr("r", (d) => r(d.params_billion))
+          .attr("fill", (d) => color(d.affiliation))
+          .attr("fill-opacity", 0.78)
+          .attr("stroke", "var(--page-bg)")
+          .attr("stroke-width", 1.2)
+          .on("mouseenter", (event, d) => {
+            tooltip.innerHTML = `
+              <div class="chart-tooltip-title">${d.model}</div>
+              <div><strong>Year:</strong> ${d.year}</div>
+              <div><strong>Affiliation:</strong> ${d.affiliation}</div>
+              <div><strong>Parameters:</strong> ${formatParamB(d.params_billion)}</div>
+              <div><strong>ImageNet Top-1:</strong> ${formatAcc(d.imagenet_top1)}</div>
+            `;
+            tooltip.style.opacity = "1";
+          })
+          .on("mousemove", (event) => {
+            const [mx, my] = d3.pointer(event, container);
+            tooltip.style.transform = `translate(${Math.round(mx + 14)}px, ${Math.round(my + 14)}px)`;
+          })
+          .on("mouseleave", () => {
+            tooltip.style.opacity = "0";
+            tooltip.style.transform = "translate(-9999px, -9999px)";
+          });
+        dots.exit().remove();
+      }
+
+      async function loadData() {
+        const paths = [
+          "/data/model-imagenet-performance.csv",
+          "./data/model-imagenet-performance.csv",
+        ];
+        for (const path of paths) {
+          try {
+            const res = await fetch(path, { cache: "no-cache" });
+            if (!res.ok) continue;
+            const text = await res.text();
+            const rows = d3.csvParse(text);
+            return rows
+              .map((row) => ({
+                model: String(row.model || "").trim(),
+                year: Number(row.published_year),
+                affiliation: String(row.affiliation || "Unknown").trim(),
+                params_billion: Number(row.params_billion),
+                imagenet_top1: Number(row.imagenet_top1),
+              }))
+              .filter(
+                (row) =>
+                  row.model &&
+                  Number.isFinite(row.year) &&
+                  Number.isFinite(row.params_billion) &&
+                  Number.isFinite(row.imagenet_top1),
+              );
+          } catch (error) {}
+        }
+        return [];
+      }
+
+      let data = [];
+      loadData().then((rows) => {
+        data = rows;
+        if (!data.length) {
+          note.textContent = "Failed to load model performance data.";
+          return;
+        }
+        draw(data);
+      });
+
+      const rerender = () => {
+        if (data.length) draw(data);
+      };
+      if (window.ResizeObserver) {
+        const ro = new ResizeObserver(() => rerender());
+        ro.observe(container);
+      } else {
+        window.addEventListener("resize", rerender);
+      }
+    };
+
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", () => ensureD3(bootstrap), {
+        once: true,
+      });
+    } else {
+      ensureD3(bootstrap);
+    }
+  })();
+</script>

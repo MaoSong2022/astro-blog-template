@@ -1,0 +1,144 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import { SITE_AUTHOR, SITE_TITLE } from "../consts";
+
+// TEMPLATE NOTE
+// Replace the placeholder copy below with your own bio. Each <section>
+// is independent; delete any blocks you don't need (research interests,
+// education, etc.) and add new ones in the same style.
+
+const pageTitle = "About";
+const description = `About ${SITE_AUTHOR} — the person behind ${SITE_TITLE}.`;
+---
+
+<BaseLayout pageTitle={pageTitle} description={description}>
+  <div class="about-page">
+    <section class="about-section" aria-labelledby="intro-heading">
+      <h2 id="intro-heading">Introduction</h2>
+      <div class="intro-section">
+        <p>
+          Hi, I'm <strong>{SITE_AUTHOR}</strong>. This blog is where I keep
+          notes, write tutorials, and think out loud about whatever I'm
+          working on. The site is built with{" "}
+          <a href="https://astro.build/" target="_blank" rel="noopener noreferrer">Astro</a>{" "}
+          and based on a clean, opinionated blog template.
+        </p>
+        <p>
+          To customize this page, edit <code>src/pages/about.astro</code>.
+        </p>
+      </div>
+    </section>
+
+    <hr class="about-divider" />
+
+    <section class="about-section" aria-labelledby="interests-heading">
+      <h2 id="interests-heading">What I Write About</h2>
+      <div class="research-section">
+        <ul>
+          <li>
+            <strong>Topic one</strong> — Replace this with what you actually
+            write about.
+          </li>
+          <li>
+            <strong>Topic two</strong> — Another area of interest.
+          </li>
+          <li>
+            <strong>Topic three</strong> — And one more.
+          </li>
+        </ul>
+      </div>
+    </section>
+
+    <hr class="about-divider" />
+
+    <section class="about-section" aria-labelledby="contact-heading">
+      <h2 id="contact-heading">Get in Touch</h2>
+      <div class="contact-section">
+        <p>
+          The best way to reach me is by email.
+        </p>
+        <p>
+          <strong>Email:</strong>{" "}
+          <a href="mailto:you@example.com">you@example.com</a>
+        </p>
+      </div>
+    </section>
+
+    <hr class="about-divider" />
+
+    <section class="about-section" aria-labelledby="social-heading">
+      <h2 id="social-heading">Find Me Online</h2>
+      <div class="social-links-section">
+        <div class="social-grid">
+          <a
+            href="https://github.com/your-handle"
+            class="social-card github-card"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <div class="social-icon" aria-hidden="true">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="32"
+                height="32"
+                viewBox="0 0 24 24"
+                fill="currentColor"
+              >
+                <path
+                  d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"
+                ></path>
+              </svg>
+            </div>
+            <div class="social-info">
+              <h3>GitHub</h3>
+              <p>Open source &amp; code</p>
+            </div>
+          </a>
+
+          <a
+            href="https://example.com/rss.xml"
+            class="social-card"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <div class="social-icon" aria-hidden="true">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="32"
+                height="32"
+                viewBox="0 0 24 24"
+                fill="currentColor"
+              >
+                <path
+                  d="M4 11a9 9 0 0 1 9 9h-2a7 7 0 0 0-7-7v-2zm0-7a16 16 0 0 1 16 16h-2A14 14 0 0 0 4 6V4zm2 13a2 2 0 1 1 0 4 2 2 0 0 1 0-4z"
+                ></path>
+              </svg>
+            </div>
+            <div class="social-info">
+              <h3>RSS</h3>
+              <p>Subscribe to new posts</p>
+            </div>
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <hr class="about-divider" />
+
+    <section class="about-section" aria-labelledby="blog-heading">
+      <h2 id="blog-heading">About This Blog</h2>
+      <div class="blog-info-section">
+        <p>
+          Articles live under <code>src/content/&lt;slug&gt;/article.md</code>{" "}
+          (or <code>.mdx</code>). Each post is a self-contained content bundle —
+          drop in images, sub-chapters, and data files alongside the article and
+          they'll be picked up automatically.
+        </p>
+      </div>
+    </section>
+
+    <p class="about-back">
+      <a href="/blog">← Back to the blog</a>
+    </p>
+  </div>
+</BaseLayout>

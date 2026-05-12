@@ -1,0 +1,136 @@
+import Sidenote from '../../../components/Sidenote.astro';
+import Note from '../../../components/Note.astro';
+import Stack from '../../../components/Stack.astro';
+
+## Getting Started
+
+### Installation
+
+The fastest way to get started is with **npx**:
+
+```bash
+npx create-research-article my-paper
+```
+
+You can also pick a template directly:
+
+```bash
+npx create-research-article my-paper --template=article
+npx create-research-article my-paper --template=paper
+```
+
+The CLI guides you through the setup: project name, metadata (title, authors, affiliations), and template choice. It also offers to **create and deploy a Hugging Face Space** automatically if you have `huggingface-cli` installed.
+
+Once done:
+
+```bash
+cd my-paper/app
+npm run dev
+```
+
+**You're ready to go!** 🎉
+
+<Note>
+Requires **Node.js 20 or newer**. To manage versions, consider [nvm](https://github.com/nvm-sh/nvm) (macOS/Linux) or [nvm-windows](https://github.com/coreybutler/nvm-windows).
+</Note>
+
+<details>
+<summary>Alternative: duplicate the Space on Hugging Face</summary>
+
+1. Open **[Research Article Template](https://huggingface.co/spaces/tfrere/research-article-template)** and click **Duplicate this Space**.
+2. Clone your new Space:
+```bash
+git clone git@hf.co:spaces/<your-username>/<your-space>
+cd <your-space>/app
+git lfs install && git lfs pull
+npm install && npm run dev
+```
+</details>
+
+### Template variants
+
+You can choose the layout during `npx create-research-article`, or change it later in `article.mdx` frontmatter:
+
+```yaml
+template: "article"  # full: banner, sidebar TOC, figure numbering, citation block, PDF export
+template: "paper"    # lighter: centered single column, no figure numbering
+```
+
+See them live: [article template](https://huggingface.co/spaces/tfrere/test-article-scaffold) | [paper template](https://huggingface.co/spaces/tfrere/test-paper-scaffold)
+
+
+The `paper` template also supports external links (Paper, Code, Demo, Data...) displayed as pill buttons below the authors:
+
+```yaml
+links:
+  - label: "Paper"
+    url: "https://arxiv.org/abs/..."
+  - label: "Code"
+    url: "https://github.com/..."
+```
+
+Long titles are automatically balanced and downsized. You can force a line break with `\n` in the frontmatter:
+
+```yaml
+title: "Why Open-Source LLMs\nAre Reshaping the AI Landscape"
+```
+
+### Development
+
+```bash
+npm run dev
+```
+
+Once started, the dev server is available at `http://localhost:4321`.
+
+### Build
+
+```bash
+npm run build
+```
+
+### Deploy
+
+Push to your Hugging Face Space to trigger an automatic build and deploy:
+
+```bash
+git add .
+git commit -m "Update content"
+git push space main
+```
+
+If you haven't set up a Space yet:
+```bash
+# create a Docker Space at huggingface.co/new-space, then:
+git remote add space git@hf.co:spaces/<your-username>/<your-space>
+git push space main
+```
+
+<Note>
+Serving the `dist/` directory on any static host also works.
+</Note>
+<Note>
+A [slugified-title].pdf and thumb.jpg are generated at build time in the public folder.
+</Note>
+
+### Template Synchronization
+
+Keep your project up-to-date with the latest template improvements. The sync system fetches the most recent changes from the official template repository at `https://huggingface.co/spaces/tfrere/research-article-template` and copies them to your project.
+
+```bash
+# Preview what would be updated
+npm run sync:template -- --dry-run
+
+# Update template files (preserves your content)
+npm run sync:template
+```
+
+**What gets preserved:**
+- Your content in `/src/content/`
+
+**What gets updated:**
+- All template files (components, styles, configuration)
+- Dockerfile and deployment configuration
+- Dependencies and build system
+
+

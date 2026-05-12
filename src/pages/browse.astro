@@ -1,0 +1,421 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import { browseCategoryHref, browseTagHref } from "../utils/browse-links";
+import { parseArticleGlob, type SiteArticleEntry } from "../utils/site-articles";
+import { getAllArticleBundleLastModifiedIso } from "../utils/article-modified";
+
+const articleGlob = import.meta.glob<{ frontmatter: Record<string, unknown> }>(
+  "../content/*/article.{md,mdx}",
+  { eager: true },
+);
+
+const modifiedBySlug = await getAllArticleBundleLastModifiedIso();
+const articles = await parseArticleGlob(articleGlob, modifiedBySlug);
+
+const categories = [
+  ...new Set(articles.map((a) => a.category).filter(Boolean) as string[]),
+].sort((a, b) => a.localeCompare(b));
+
+const allTags = [
+  ...new Set(articles.flatMap((a) => a.tags)),
+].sort((a, b) => a.localeCompare(b));
+
+type BrowseRow = {
+  slug: string;
+  url: string;
+  title: string;
+  displayDate: string;
+  description: string;
+  category: string;
+  tags: string[];
+};
+
+const browseArticles: BrowseRow[] = articles.map((a: SiteArticleEntry) => ({
+  slug: a.slug,
+  url: a.url,
+  title: a.title,
+  displayDate: a.displayDate ?? "",
+  description: a.description ?? "",
+  category: a.category ?? "",
+  tags: a.tags,
+}));
+
+const yearWeight = (year: string): number => {
+  const parsed = Number.parseInt(year, 10);
+  return Number.isNaN(parsed) ? -1 : parsed;
+};
+
+const getArticleYear = (rawDate: string): string => {
+  const match = /^(\d{4})/.exec(rawDate.trim());
+  return match?.[1] ?? "Unknown";
+};
+
+const archiveMap = new Map<string, SiteArticleEntry[]>();
+for (const article of articles) {
+  const year = getArticleYear(article.modified ?? article.published ?? "");
+  const grouped = archiveMap.get(year);
+  if (grouped) {
+    grouped.push(article);
+  } else {
+    archiveMap.set(year, [article]);
+  }
+}
+
+const archiveYears = [...archiveMap.keys()].sort(
+  (a, b) => yearWeight(b) - yearWeight(a),
+);
+
+const pageTitle = "Browse";
+const description =
+  "Search posts, filter by category, or narrow down with tags.";
+---
+
+<BaseLayout
+  pageTitle={pageTitle}
+  description={description}
+  contentClass="site-page--browse"
+>
+  <p class="site-lead">
+      Filter the full list by keyword, category, or tags. Matching is instant in
+      your browser.
+    </p>
+
+    <div class="browse-toolbar">
+      <label class="browse-field browse-field--grow">
+        <span class="browse-field-label">Search</span>
+        <input
+          type="search"
+          id="browse-q"
+          class="browse-input"
+          placeholder="Title, description, slug, tags…"
+          autocomplete="off"
+          enterkeyhint="search"
+        />
+      </label>
+
+      {
+        categories.length > 0 ? (
+          <div class="browse-field browse-field--full">
+            <span class="browse-field-label" id="browse-categories-label">
+              Categories
+            </span>
+            <div
+              class="browse-tag-row"
+              id="browse-categories"
+              role="group"
+              aria-labelledby="browse-categories-label"
+            >
+              {categories.map((c) => (
+                <button
+                  type="button"
+                  class="browse-category"
+                  data-category={c}
+                  aria-pressed="false"
+                >
+                  {c}
+                </button>
+              ))}
+            </div>
+            <p class="browse-tag-hint">
+              Pick one category to filter. Click again to clear.
+            </p>
+          </div>
+        ) : null
+      }
+
+      {
+        allTags.length > 0 ? (
+          <div class="browse-field browse-field--full">
+            <span class="browse-field-label" id="browse-tags-label">
+              Tags
+            </span>
+            <div
+              class="browse-tag-row"
+              id="browse-tags"
+              role="group"
+              aria-labelledby="browse-tags-label"
+            >
+              {allTags.map((t) => (
+                <button
+                  type="button"
+                  class="browse-tag"
+                  data-tag-norm={t.toLowerCase()}
+                  aria-pressed="false"
+                >
+                  {t}
+                </button>
+              ))}
+            </div>
+            <p class="browse-tag-hint">
+              Multiple tags narrow the list: a post must include every selected
+              tag.
+            </p>
+          </div>
+        ) : null
+      }
+
+      <div class="browse-toolbar-actions">
+        <button type="button" class="button button--ghost browse-clear" id="browse-clear">
+          Clear filters
+        </button>
+        <p class="browse-count" id="browse-count" aria-live="polite" />
+      </div>
+    </div>
+
+    <h2 class="browse-results-heading">Archive</h2>
+    <div id="browse-list">
+      {
+        archiveYears.map((year, index) => (
+          <section class="browse-archive-year" data-archive-year-group>
+            <h3>
+              <button
+                type="button"
+                class="button button--ghost browse-archive-toggle"
+                data-archive-toggle
+                aria-expanded="false"
+                aria-controls={`archive-year-${index}`}
+              >
+                <span class="browse-archive-left">
+                  <span class="browse-archive-caret" aria-hidden="true">▸</span>
+                  <span class="browse-archive-year-label">{year}</span>
+                </span>
+                <span class="browse-archive-count">
+                  {archiveMap.get(year)?.length ?? 0}
+                </span>
+              </button>
+            </h3>
+            <ul
+              class="article-index"
+              id={`archive-year-${index}`}
+              data-archive-list
+              hidden
+            >
+              {(archiveMap.get(year) ?? []).map((a) => (
+                <li class="article-index__item" data-browse-slug={a.slug}>
+                  {a.category ? (
+                    <a
+                      class="article-index__category"
+                      href={browseCategoryHref(a.category)}
+                    >
+                      {a.category}
+                    </a>
+                  ) : null}
+                  <a class="article-index__link" href={a.url}>
+                    {a.title}
+                  </a>
+                  {a.displayDate ? (
+                    <span class="article-index__meta">{a.displayDate}</span>
+                  ) : null}
+                  {a.description ? (
+                    <p class="article-index__desc">{a.description}</p>
+                  ) : null}
+                  {a.tags.length > 0 ? (
+                    <div class="article-index__tags">
+                      {a.tags.map((t) => (
+                        <a class="article-index__tag" href={browseTagHref(t)}>
+                          {t}
+                        </a>
+                      ))}
+                    </div>
+                  ) : null}
+                </li>
+              ))}
+            </ul>
+          </section>
+        ))
+      }
+    </div>
+
+  <script define:vars={{ browseArticles }}>
+    function haystack(row) {
+      return [
+        row.title,
+        row.description,
+        row.slug,
+        row.category,
+        ...row.tags,
+      ]
+        .join(" ")
+        .toLowerCase();
+    }
+
+    function getSelectedCategory() {
+      const pressed = document.querySelector(
+        ".browse-category[aria-pressed='true']",
+      );
+      return pressed?.getAttribute("data-category") ?? "";
+    }
+
+    function applyFilters() {
+      const qEl = document.getElementById("browse-q");
+      const query = (qEl instanceof HTMLInputElement ? qEl.value : "")
+        .trim()
+        .toLowerCase();
+      const category = getSelectedCategory();
+
+      const activeNorms = [];
+      document.querySelectorAll(".browse-tag[aria-pressed='true']").forEach(
+        (btn) => {
+          const n = btn.getAttribute("data-tag-norm");
+          if (n) activeNorms.push(n);
+        },
+      );
+
+      let visible = 0;
+      const list = document.getElementById("browse-list");
+      if (!list) return;
+
+      for (const li of list.querySelectorAll("[data-browse-slug]")) {
+        const slug = li.getAttribute("data-browse-slug");
+        const row = browseArticles.find((r) => r.slug === slug);
+        if (!row) continue;
+
+        let ok = true;
+        if (query && !haystack(row).includes(query)) ok = false;
+        if (category && row.category !== category) ok = false;
+        if (activeNorms.length) {
+          const lowered = row.tags.map((t) => t.toLowerCase());
+          for (const need of activeNorms) {
+            if (!lowered.includes(need)) ok = false;
+          }
+        }
+
+        li.classList.toggle("browse-hidden", !ok);
+        if (ok) visible++;
+      }
+
+      for (const yearGroup of list.querySelectorAll("[data-archive-year-group]")) {
+        const hasVisiblePosts = !!yearGroup.querySelector(
+          "[data-browse-slug]:not(.browse-hidden)",
+        );
+        yearGroup.classList.toggle("browse-hidden", !hasVisiblePosts);
+      }
+
+      const countEl = document.getElementById("browse-count");
+      if (countEl) {
+        const total = browseArticles.length;
+        countEl.textContent =
+          visible === total
+            ? `Showing all ${total} posts`
+            : `Showing ${visible} of ${total} posts`;
+      }
+    }
+
+    function clearFilters() {
+      const qEl = document.getElementById("browse-q");
+      if (qEl instanceof HTMLInputElement) qEl.value = "";
+      document.querySelectorAll(".browse-category[aria-pressed='true']").forEach(
+        (btn) => btn.setAttribute("aria-pressed", "false"),
+      );
+      document.querySelectorAll(".browse-tag[aria-pressed='true']").forEach(
+        (btn) => btn.setAttribute("aria-pressed", "false"),
+      );
+      try {
+        window.history.replaceState({}, "", window.location.pathname);
+      } catch {}
+      applyFilters();
+    }
+
+    function applyFiltersFromUrl() {
+      let params;
+      try {
+        params = new URLSearchParams(window.location.search);
+      } catch {
+        return;
+      }
+
+      const qRaw = params.get("q") ?? params.get("search");
+      const qEl = document.getElementById("browse-q");
+      if (qRaw && qEl instanceof HTMLInputElement) qEl.value = qRaw;
+
+      const cat = params.get("category");
+      if (cat) {
+        document.querySelectorAll(".browse-category").forEach((btn) => {
+          const v = btn.getAttribute("data-category");
+          btn.setAttribute("aria-pressed", v === cat ? "true" : "false");
+        });
+      }
+
+      const tagVals = params.getAll("tag");
+      if (tagVals.length) {
+        const norms = new Set(
+          tagVals.map((t) => t.trim().toLowerCase()).filter(Boolean),
+        );
+        document.querySelectorAll(".browse-tag").forEach((btn) => {
+          const n = btn.getAttribute("data-tag-norm");
+          if (n && norms.has(n)) btn.setAttribute("aria-pressed", "true");
+        });
+      }
+    }
+
+    document.getElementById("browse-q")?.addEventListener("input", applyFilters);
+
+    document.getElementById("browse-categories")?.addEventListener("click", (e) => {
+      const btn = e.target?.closest?.(".browse-category");
+      if (!btn || !(btn instanceof HTMLElement)) return;
+      const pressed = btn.getAttribute("aria-pressed") === "true";
+      document.querySelectorAll(".browse-category").forEach((b) =>
+        b.setAttribute("aria-pressed", "false"),
+      );
+      if (!pressed) btn.setAttribute("aria-pressed", "true");
+      applyFilters();
+    });
+
+    document.getElementById("browse-tags")?.addEventListener("click", (e) => {
+      const btn = e.target?.closest?.(".browse-tag");
+      if (!btn || !(btn instanceof HTMLElement)) return;
+      const pressed = btn.getAttribute("aria-pressed") === "true";
+      btn.setAttribute("aria-pressed", pressed ? "false" : "true");
+      applyFilters();
+    });
+
+    document.getElementById("browse-list")?.addEventListener("click", (e) => {
+      const btn = e.target?.closest?.("[data-archive-toggle]");
+      if (!btn || !(btn instanceof HTMLButtonElement)) return;
+      const section = btn.closest("[data-archive-year-group]");
+      if (!(section instanceof HTMLElement)) return;
+      const list = section.querySelector("[data-archive-list]");
+      if (!(list instanceof HTMLElement)) return;
+      const expanded = btn.getAttribute("aria-expanded") === "true";
+      btn.setAttribute("aria-expanded", expanded ? "false" : "true");
+      list.hidden = expanded;
+    });
+
+    document.getElementById("browse-clear")?.addEventListener("click", clearFilters);
+
+    applyFiltersFromUrl();
+    applyFilters();
+  </script>
+
+  <style>
+    .browse-archive-toggle {
+      display: flex;
+      align-items: center;
+      width: 100%;
+      justify-content: space-between;
+      text-align: left;
+      gap: 0.75rem;
+    }
+
+    .browse-archive-count {
+      font-variant-numeric: tabular-nums;
+      opacity: 0.75;
+      margin-left: auto;
+    }
+
+    .browse-archive-left {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .browse-archive-caret {
+      transition: transform 120ms ease;
+      opacity: 0.75;
+    }
+
+    .browse-archive-toggle[aria-expanded="true"] .browse-archive-caret {
+      transform: rotate(90deg);
+    }
+  </style>
+</BaseLayout>

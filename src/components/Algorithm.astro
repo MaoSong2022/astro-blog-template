@@ -1,0 +1,18 @@
+---
+/**
+ * Renders a titled algorithm block. Put normal MDX/markdown in the default slot
+ * so inline and display math ($...$, $$...$$) still runs through remark-math.
+ */
+interface Props {
+  title: string;
+}
+
+const { title } = Astro.props;
+---
+
+<figure class="article-algorithm">
+  <figcaption class="article-algorithm__title">Algorithm: {title}</figcaption>
+  <div class="article-algorithm__body">
+    <slot />
+  </div>
+</figure>

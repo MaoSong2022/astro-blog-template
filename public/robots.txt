@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+
+# Update the host below to your production URL after deployment.
+Sitemap: https://example.com/sitemap-index.xml
+LLMs-Txt: https://example.com/llms.txt

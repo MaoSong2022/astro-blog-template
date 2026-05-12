@@ -1,0 +1,51 @@
+/* Algorithm boxes (MDX <Algorithm> wrapper) — readable on web; KaTeX does not render \\begin{algorithm}. */
+
+.content-grid > main .article-algorithm,
+.site-page .article-algorithm {
+  margin: var(--spacing-4) 0 var(--block-spacing-y);
+  padding: var(--spacing-4) var(--spacing-5);
+  border: 1px solid var(--border-color);
+  border-radius: calc(var(--button-radius) * 1.25);
+  background: var(--surface-bg);
+}
+
+.article-algorithm__title {
+  margin: 0 0 var(--spacing-4);
+  padding-bottom: var(--spacing-2);
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-color);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.article-algorithm__body {
+  font-size: 0.9375rem;
+  line-height: 1.65;
+  color: var(--text-color);
+}
+
+.article-algorithm__body > :first-child {
+  margin-top: 0;
+}
+
+.article-algorithm__body > :last-child {
+  margin-bottom: 0;
+}
+
+.article-algorithm__body ol,
+.article-algorithm__body ul {
+  margin: var(--spacing-2) 0 var(--spacing-3);
+  padding-left: 1.35rem;
+}
+
+.article-algorithm__body li {
+  margin-bottom: var(--spacing-2);
+}
+
+.article-algorithm__body li:last-child {
+  margin-bottom: 0;
+}
+
+.article-algorithm__body .katex-display {
+  margin: var(--spacing-3) 0;
+}

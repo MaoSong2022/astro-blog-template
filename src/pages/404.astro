@@ -1,0 +1,54 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+
+const pageTitle = "404";
+const description = "Page not found. Redirecting to a valid page.";
+
+const articleEntryPaths = Object.keys(
+  import.meta.glob("../content/*/article.{md,mdx}"),
+);
+const knownArticleSlugs = Array.from(
+  new Set(
+    articleEntryPaths
+      .map((path) => path.match(/content\/([^/]+)\/article\.(?:md|mdx)$/)?.[1])
+      .filter((slug): slug is string => Boolean(slug)),
+  ),
+);
+---
+
+<BaseLayout pageTitle={pageTitle} description={description}>
+  <script is:inline define:vars={{ knownArticleSlugs }}>
+    (() => {
+      const knownSlugs = new Set(knownArticleSlugs);
+      const rawPath = window.location.pathname.replace(/\/{2,}/g, "/");
+      const path = rawPath.endsWith("/") ? rawPath : `${rawPath}/`;
+      const segments = path.split("/").filter(Boolean);
+
+      let redirectTarget = "/";
+      // Legacy scheme: /p/<slug>/ => /blog/<slug>/ when <slug> exists.
+      if (segments[0] === "p" && segments[1]) {
+        const candidate = decodeURIComponent(segments[1]);
+        if (knownSlugs.has(candidate)) {
+          redirectTarget = `/blog/${encodeURIComponent(candidate)}/`;
+        }
+      }
+
+      if (window.location.pathname !== redirectTarget) {
+        window.location.replace(redirectTarget);
+      }
+    })();
+  </script>
+  <meta http-equiv="refresh" content="0;url=/" />
+
+  <p>
+    This page does not exist. You are being redirected.
+  </p>
+  <p>
+    Old paths like <code>/p/&lt;slug&gt;</code> are redirected to valid
+    <code>/blog/&lt;slug&gt;</code> pages when available. Otherwise, we redirect
+    to the homepage.
+  </p>
+  <p>
+    If redirect does not happen automatically, <a href="/">go to homepage</a>.
+  </p>
+</BaseLayout>

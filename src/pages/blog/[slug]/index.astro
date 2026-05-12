@@ -1,0 +1,29 @@
+---
+import ArticlePage from "../../../layouts/ArticlePage.astro";
+import { getArticleBundleLastModifiedIso } from "../../../utils/article-modified";
+
+export async function getStaticPaths() {
+  const loaders = import.meta.glob("../../../content/*/article.{md,mdx}");
+  const entries = await Promise.all(
+    Object.entries(loaders).map(async ([path, load]) => {
+      const match = path.match(/content\/([^/]+)\/article\.(?:md|mdx)$/);
+      if (!match) return null;
+      const slug = match[1];
+      const articleMod = await load();
+      const lastModified = await getArticleBundleLastModifiedIso(slug);
+      return {
+        params: { slug },
+        props: { articleMod, lastModified },
+      };
+    }),
+  );
+  return entries.filter(
+    (e): e is { params: { slug: string }; props: { articleMod: unknown } } =>
+      e !== null,
+  );
+}
+
+const { articleMod, lastModified } = Astro.props;
+---
+
+<ArticlePage articleMod={articleMod as any} lastModified={lastModified} />

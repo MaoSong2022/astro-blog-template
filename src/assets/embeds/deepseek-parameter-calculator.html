@@ -1,0 +1,363 @@
+<div class="d3-deepseek-parameter-calculator"></div>
+
+<style>
+  .d3-deepseek-parameter-calculator {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    line-height: 1.5;
+    color: var(--text-color);
+  }
+
+  .d3-deepseek-parameter-calculator .controls-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+
+  .d3-deepseek-parameter-calculator .control-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .d3-deepseek-parameter-calculator .control-group label {
+    font-size: 0.8em;
+    font-weight: 700;
+  }
+
+  .d3-deepseek-parameter-calculator .control-group select {
+    padding: 8px 10px;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    background: var(--surface-bg);
+    color: var(--text-color);
+    font-size: 0.9em;
+  }
+
+  .d3-deepseek-parameter-calculator .summary-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 10px;
+    margin: 0 0 16px 0;
+  }
+
+  .d3-deepseek-parameter-calculator .summary-card {
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background: var(--page-bg);
+    padding: 12px;
+    text-align: center;
+  }
+
+  .d3-deepseek-parameter-calculator .summary-title {
+    font-size: 0.75em;
+    color: var(--muted-color);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-bottom: 6px;
+  }
+
+  .d3-deepseek-parameter-calculator .summary-value {
+    font-size: 1.1em;
+    font-weight: 700;
+    color: var(--primary-color);
+  }
+
+  .d3-deepseek-parameter-calculator .config-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 8px;
+    margin-bottom: 18px;
+  }
+
+  .d3-deepseek-parameter-calculator .config-item {
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    padding: 8px 10px;
+    background: var(--surface-bg);
+  }
+
+  .d3-deepseek-parameter-calculator .config-key {
+    font-size: 0.74em;
+    color: var(--muted-color);
+    text-transform: uppercase;
+  }
+
+  .d3-deepseek-parameter-calculator .config-value {
+    font-size: 0.92em;
+    font-weight: 600;
+  }
+
+  .d3-deepseek-parameter-calculator .chart-wrap {
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    background: var(--page-bg);
+    padding: 10px;
+    position: relative;
+  }
+
+  .d3-deepseek-parameter-calculator .chart-tooltip {
+    position: absolute;
+    pointer-events: none;
+    opacity: 0;
+    transform: translate(-9999px, -9999px);
+    transition: opacity 0.12s ease;
+    font-size: 12px;
+    line-height: 1.35;
+    border: 1px solid var(--border-color);
+    background: var(--surface-bg);
+    color: var(--text-color);
+    border-radius: 8px;
+    padding: 8px 10px;
+    min-width: 220px;
+    z-index: 8;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+  }
+
+  .d3-deepseek-parameter-calculator svg {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+</style>
+
+<script>
+  (() => {
+    const ensureD3 = (cb) => {
+      if (window.d3 && typeof window.d3.select === "function") return cb();
+      let s = document.getElementById("d3-cdn-script");
+      if (!s) {
+        s = document.createElement("script");
+        s.id = "d3-cdn-script";
+        s.src = "https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js";
+        document.head.appendChild(s);
+      }
+      s.addEventListener(
+        "load",
+        () => {
+          if (window.d3 && typeof window.d3.select === "function") cb();
+        },
+        { once: true },
+      );
+    };
+
+    const bootstrap = () => {
+      const scriptEl = document.currentScript;
+      let container = scriptEl ? scriptEl.previousElementSibling : null;
+      if (
+        !(container &&
+          container.classList &&
+          container.classList.contains("d3-deepseek-parameter-calculator"))
+      ) {
+        const candidates = Array.from(
+          document.querySelectorAll(".d3-deepseek-parameter-calculator"),
+        ).filter((el) => !(el.dataset && el.dataset.mounted === "true"));
+        container = candidates[candidates.length - 1] || null;
+      }
+      if (!container) return;
+      if (container.dataset) {
+        if (container.dataset.mounted === "true") return;
+        container.dataset.mounted = "true";
+      }
+
+      container.innerHTML = `
+        <div class="controls-grid">
+          <div class="control-group">
+            <label for="deepseek-model-select">DeepSeek model</label>
+            <select id="deepseek-model-select"></select>
+          </div>
+        </div>
+        <div class="summary-grid">
+          <div class="summary-card"><div class="summary-title">Family</div><div class="summary-value" id="ds-family">-</div></div>
+          <div class="summary-card"><div class="summary-title">Year</div><div class="summary-value" id="ds-year">-</div></div>
+          <div class="summary-card"><div class="summary-title">Total Params</div><div class="summary-value" id="ds-total">-</div></div>
+          <div class="summary-card"><div class="summary-title">Active Params</div><div class="summary-value" id="ds-active">-</div></div>
+        </div>
+        <div class="config-grid" id="ds-config-grid"></div>
+        <div class="chart-wrap">
+          <div class="chart-tooltip" id="ds-tooltip"></div>
+          <svg id="ds-parts-chart"></svg>
+        </div>
+      `;
+
+      const formatB = (n) => `${Number(n).toFixed(n >= 10 ? 1 : 2)}B`;
+      const formatInt = (n) => Number(n).toLocaleString();
+
+      const selectEl = container.querySelector("#deepseek-model-select");
+      const familyEl = container.querySelector("#ds-family");
+      const yearEl = container.querySelector("#ds-year");
+      const totalEl = container.querySelector("#ds-total");
+      const activeEl = container.querySelector("#ds-active");
+      const configGridEl = container.querySelector("#ds-config-grid");
+      const tooltipEl = container.querySelector("#ds-tooltip");
+      const svg = d3.select(container.querySelector("#ds-parts-chart"));
+
+      const color = d3.scaleOrdinal(d3.schemeTableau10);
+      let models = [];
+      let currentModel = null;
+
+      const configLabelMap = {
+        vocab_size: "Vocab Size",
+        hidden_size: "Hidden Size",
+        num_layers: "Layers",
+        num_attention_heads: "Attention Heads",
+        num_kv_heads: "KV Heads",
+        intermediate_size: "Intermediate Size",
+        context_length: "Context Length",
+        moe_experts: "MoE Experts",
+        activated_experts: "Activated Experts",
+      };
+
+      const buildConfigGrid = (cfg) => {
+        configGridEl.innerHTML = "";
+        Object.entries(cfg || {}).forEach(([k, v]) => {
+          const item = document.createElement("div");
+          item.className = "config-item";
+          item.innerHTML = `
+            <div class="config-key">${configLabelMap[k] || k}</div>
+            <div class="config-value">${formatInt(v)}</div>
+          `;
+          configGridEl.appendChild(item);
+        });
+      };
+
+      const renderChart = (parts) => {
+        const width = container.clientWidth || 920;
+        const margin = { top: 20, right: 16, bottom: 32, left: 170 };
+        const barHeight = 34;
+        const gap = 10;
+        const innerHeight = parts.length * (barHeight + gap);
+        const height = margin.top + margin.bottom + innerHeight;
+        const innerWidth = width - margin.left - margin.right;
+
+        svg.attr("width", width).attr("height", height);
+        svg.selectAll("*").remove();
+
+        const root = svg
+          .append("g")
+          .attr("transform", `translate(${margin.left},${margin.top})`);
+
+        const x = d3
+          .scaleLinear()
+          .domain([0, d3.max(parts, (d) => d.params_billion) * 1.1])
+          .range([0, innerWidth]);
+
+        const y = d3
+          .scaleBand()
+          .domain(parts.map((d) => d.name))
+          .range([0, innerHeight])
+          .paddingInner(0.22);
+
+        color.domain(parts.map((d) => d.name));
+
+        root
+          .append("g")
+          .attr("transform", `translate(0,${innerHeight})`)
+          .call(d3.axisBottom(x).ticks(5).tickFormat((d) => `${d}B`));
+
+        root
+          .append("g")
+          .call(d3.axisLeft(y))
+          .selectAll("text")
+          .attr("fill", "var(--text-color)")
+          .style("font-size", "12px");
+
+        root
+          .append("g")
+          .selectAll("rect")
+          .data(parts, (d) => d.name)
+          .join("rect")
+          .attr("x", 0)
+          .attr("y", (d) => y(d.name))
+          .attr("height", y.bandwidth())
+          .attr("rx", 6)
+          .attr("fill", (d) => color(d.name))
+          .attr("width", 0)
+          .on("mouseenter", (event, d) => {
+            tooltipEl.innerHTML = `
+              <div><strong>${d.name}</strong></div>
+              <div>Parameters: <strong>${formatB(d.params_billion)}</strong></div>
+              <div>${d.description || ""}</div>
+            `;
+            tooltipEl.style.opacity = "1";
+          })
+          .on("mousemove", (event) => {
+            const [mx, my] = d3.pointer(event, container);
+            tooltipEl.style.transform = `translate(${Math.round(mx + 12)}px, ${Math.round(my + 12)}px)`;
+          })
+          .on("mouseleave", () => {
+            tooltipEl.style.opacity = "0";
+            tooltipEl.style.transform = "translate(-9999px, -9999px)";
+          })
+          .transition()
+          .duration(450)
+          .attr("width", (d) => x(d.params_billion));
+
+        root
+          .append("g")
+          .selectAll("text")
+          .data(parts, (d) => d.name)
+          .join("text")
+          .attr("x", (d) => x(d.params_billion) + 8)
+          .attr("y", (d) => y(d.name) + y.bandwidth() / 2 + 4)
+          .attr("fill", "var(--text-color)")
+          .style("font-size", "12px")
+          .text((d) => formatB(d.params_billion));
+      };
+
+      const renderModel = (modelName) => {
+        currentModel = models.find((m) => m.model === modelName) || models[0] || null;
+        if (!currentModel) return;
+
+        familyEl.textContent = currentModel.family || "-";
+        yearEl.textContent = String(currentModel.year || "-");
+        totalEl.textContent = formatB(currentModel.total_params_billion || 0);
+        activeEl.textContent = formatB(currentModel.active_params_billion || 0);
+        buildConfigGrid(currentModel.config || {});
+        renderChart(currentModel.parts || []);
+      };
+
+      const populateSelect = () => {
+        selectEl.innerHTML = "";
+        models.forEach((m) => {
+          const option = document.createElement("option");
+          option.value = m.model;
+          option.textContent = m.model;
+          selectEl.appendChild(option);
+        });
+        if (models.length) renderModel(models[0].model);
+      };
+
+      selectEl.addEventListener("change", () => renderModel(selectEl.value));
+
+      const rerender = () => {
+        if (currentModel) renderChart(currentModel.parts || []);
+      };
+
+      fetch("/data/deepseek-series-configs.json", { cache: "no-cache" })
+        .then((res) => res.json())
+        .then((data) => {
+          models = Array.isArray(data) ? data : [];
+          populateSelect();
+        })
+        .catch(() => {
+          container.innerHTML = "<p>Failed to load DeepSeek configuration data.</p>";
+        });
+
+      if (window.ResizeObserver) {
+        const ro = new ResizeObserver(() => rerender());
+        ro.observe(container);
+      } else {
+        window.addEventListener("resize", rerender);
+      }
+    };
+
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", () => ensureD3(bootstrap), {
+        once: true,
+      });
+    } else {
+      ensureD3(bootstrap);
+    }
+  })();
+</script>

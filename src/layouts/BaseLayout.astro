@@ -1,0 +1,104 @@
+---
+import Header from "/src/components/Header.astro";
+import SiteFooter from "/src/components/SiteFooter.astro";
+import "/src/styles/global.css";
+import {
+  SITE_AUTHOR,
+  SITE_DESCRIPTION,
+  SITE_GOOGLE_SITE_VERIFICATION,
+  SITE_SOCIAL_IMAGE,
+  SITE_TITLE,
+} from "/src/consts";
+
+interface Props {
+  pageTitle: string;
+  description?: string;
+  /** Extra class on the inner `.site-page` wrapper (e.g. `site-page--browse`). */
+  contentClass?: string;
+}
+
+const { pageTitle, description, contentClass } = Astro.props;
+const pageDescription = description ?? SITE_DESCRIPTION;
+const canonicalURL = new URL(Astro.url.pathname, Astro.site);
+const pageTitleText =
+  pageTitle === SITE_TITLE ? SITE_TITLE : `${pageTitle} | ${SITE_TITLE}`;
+const socialImageUrl = Astro.site
+  ? new URL(SITE_SOCIAL_IMAGE, Astro.site)
+  : undefined;
+const websiteJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  name: SITE_TITLE,
+  url: String(Astro.site ?? canonicalURL.origin),
+  description: SITE_DESCRIPTION,
+  author: {
+    "@type": "Person",
+    name: SITE_AUTHOR,
+  },
+};
+---
+
+<html lang="en" data-theme="light">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" href="/favicon.ico" />
+    <link rel="sitemap" href="/sitemap-index.xml" />
+    <link rel="alternate" type="application/rss+xml" title={SITE_TITLE} href={new URL("/rss.xml", Astro.site)} />
+    <meta name="generator" content={Astro.generator} />
+    <meta name="description" content={pageDescription} />
+    <meta
+      name="robots"
+      content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"
+    />
+    <meta name="googlebot" content="index, follow" />
+    {SITE_GOOGLE_SITE_VERIFICATION ? (
+      <meta
+        name="google-site-verification"
+        content={SITE_GOOGLE_SITE_VERIFICATION}
+      />
+    ) : null}
+    <meta name="author" content={SITE_AUTHOR} />
+    <title>{pageTitleText}</title>
+    <link rel="canonical" href={canonicalURL} />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content={canonicalURL} />
+    <meta property="og:title" content={pageTitleText} />
+    <meta property="og:description" content={pageDescription} />
+    <meta property="og:site_name" content={SITE_TITLE} />
+    {socialImageUrl ? (
+      <meta property="og:image" content={socialImageUrl} />
+    ) : null}
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={pageTitleText} />
+    <meta name="twitter:description" content={pageDescription} />
+    {socialImageUrl ? (
+      <meta name="twitter:image" content={socialImageUrl} />
+    ) : null}
+    <script type="application/ld+json" set:html={JSON.stringify(websiteJsonLd)} />
+    <script async src="https://scripts.simpleanalyticscdn.com/latest.js"></script>
+    <script is:inline>
+      (() => {
+        try {
+          const saved = localStorage.getItem("theme");
+          const prefersDark =
+            window.matchMedia &&
+            window.matchMedia("(prefers-color-scheme: dark)").matches;
+          const theme = saved || (prefersDark ? "dark" : "light");
+          document.documentElement.setAttribute("data-theme", theme);
+        } catch {}
+      })();
+    </script>
+  </head>
+  <body class="site-chrome">
+    <Header />
+    <main class="site-shell">
+      <div class:list={["site-page", contentClass]}>
+        <h1>{pageTitle}</h1>
+        <slot />
+      </div>
+    </main>
+    <SiteFooter />
+  </body>
+</html>

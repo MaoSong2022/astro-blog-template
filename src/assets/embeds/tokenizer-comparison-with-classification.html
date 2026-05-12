@@ -1,0 +1,51 @@
+<div style="display: flex; flex-direction: column; gap: 2rem; margin: 2em 0; align-items: center; text-align: center;">
+  <div style="flex: none; width: 100%;">
+    <h4 style="margin: 0 0 0.5em;">Image Classification</h4>
+    <table style="margin: 0 auto; width: 60%; border-collapse: collapse; background: #fafbfc;">
+      <thead>
+        <tr>
+          <th style="border-bottom: 1px solid #ccc; text-align: center; padding: 4px;">Class Name</th>
+          <th style="border-bottom: 1px solid #ccc; text-align: center; padding: 4px;">Class ID</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td style="padding: 4px; text-align: center;">cat</td>
+          <td style="padding: 4px; text-align: center;">100</td>
+        </tr>
+        <tr>
+          <td style="padding: 4px; text-align: center;">dog</td>
+          <td style="padding: 4px; text-align: center;">200</td>
+        </tr>
+      </tbody>
+    </table>
+    <div style="margin-top: 1em; color: #555; font-size: 0.93em;">
+      <span>图像分类：类别名称（如 "cat", "dog"）被映射为类别ID（如 100, 200）作为模型的目标标签。</span>
+    </div>
+  </div>
+
+  <div style="flex: none; width: 100%;">
+    <h4 style="margin: 0 0 0.5em;">Text Tokenization</h4>
+    <table style="margin: 0 auto; width: 80%; border-collapse: collapse; background: #fafbfc;">
+      <thead>
+        <tr>
+          <th style="border-bottom: 1px solid #ccc; text-align: center; padding: 4px;">Text</th>
+          <th style="border-bottom: 1px solid #ccc; text-align: center; padding: 4px;">Token IDs</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td style="padding: 4px; text-align: center;">"I love NLP."</td>
+          <td style="padding: 4px; text-align: center;">[101, 146, 1567, 21239, 2101, 119, 102]</td>
+        </tr>
+        <tr>
+          <td style="padding: 4px; text-align: center;">"Deep learning is fun."</td>
+          <td style="padding: 4px; text-align: center;">[101, 5660, 4083, 1110, 5018, 119, 102]</td>
+        </tr>
+      </tbody>
+    </table>
+    <div style="margin-top: 1em; color: #555; font-size: 0.93em;">
+      <span>文本分词：字符串（如 "I love NLP."）被tokenizer编码为一系列token ID以供模型处理。</span>
+    </div>
+  </div>
+</div>
