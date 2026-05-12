@@ -201,4 +201,18 @@ Each block gets a copy-to-clipboard button. Use ` ```mermaid ` for diagrams.
 
 ## License
 
-This template is released under the **MIT License** (see `LICENSE`). The bundled demo article is licensed under **CC BY 4.0** by Thibaud Frere; please retain attribution if you republish it.
+This template is licensed under the **Creative Commons Attribution 4.0 International License** (CC BY 4.0) — the same license as the upstream [research-article-template](https://huggingface.co/spaces/tfrere/research-article-template).
+
+See [`LICENSE`](./LICENSE) for the full legal text and [`NOTICE`](./NOTICE) for the attribution chain and a list of modifications.
+
+### What CC BY 4.0 means for you
+
+You may freely **use, modify, fork, and redistribute** this template — including for commercial sites — as long as you:
+
+1. **Give appropriate credit** to Thibaud Frere (the original creator) and to this template. The default `SiteFooter.astro` already includes a footer link satisfying this.
+2. **Provide a link** to the CC BY 4.0 license.
+3. **Indicate if you modified** the template. If you redistribute the source, keeping the `NOTICE` file is the easiest way to satisfy this.
+
+You do **not** need to credit anyone in the articles you write yourself — those are your own work and can be licensed however you like. The attribution requirement applies only to the template scaffolding and any portion of the bundled demo article you republish.
+
+> **Note for downstream users:** CC BY 4.0 §3(a)(4) lets you apply a separate "Adapter's License" to your own additions, as long as it does not restrict downstream recipients from exercising their CC BY 4.0 rights to the original material. If you fork this and want the new code under MIT/Apache/etc., that is permitted — but the original portions remain under CC BY 4.0 and the attribution requirement must be preserved.

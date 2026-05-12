@@ -12,7 +12,7 @@
     "mermaid",
     "static-site"
   ],
-  "license": "MIT",
+  "license": "CC-BY-4.0",
   "private": false,
   "type": "module",
   "scripts": {
