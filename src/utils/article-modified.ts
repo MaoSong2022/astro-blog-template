@@ -1,4 +1,6 @@
-import { readdir, stat } from "node:fs/promises";
+import { execSync } from "node:child_process";
+import { existsSync } from "node:fs";
+import { readdir } from "node:fs/promises";
 import { join } from "node:path";
 
 const CONTENT_ROOT = join(process.cwd(), "src", "content");
@@ -36,23 +38,6 @@ async function readMarkdownFilesRecursive(dirPath: string): Promise<string[]> {
   }
 }
 
-async function latestMtimeMs(paths: string[]): Promise<number | undefined> {
-  let latest: number | undefined = undefined;
-  for (const filePath of paths) {
-    try {
-      const metadata = await stat(filePath);
-      if (latest == null || metadata.mtimeMs > latest) latest = metadata.mtimeMs;
-    } catch (error) {
-      const code =
-        error && typeof error === "object" && "code" in error
-          ? String((error as { code?: unknown }).code)
-          : "";
-      if (code !== "ENOENT") throw error;
-    }
-  }
-  return latest;
-}
-
 export async function getArticleBundleLastModifiedIso(
   slug: string,
 ): Promise<string | undefined> {
@@ -65,8 +50,23 @@ export async function getArticleBundleLastModifiedIso(
   const chapterFiles = await readMarkdownFilesRecursive(
     join(bundleRoot, "chapters"),
   );
-  const latest = await latestMtimeMs([...articleCandidates, ...chapterFiles]);
-  return latest == null ? undefined : new Date(latest).toISOString();
+  const allFiles = [...articleCandidates, ...chapterFiles].filter((p) =>
+    existsSync(p),
+  );
+  if (allFiles.length === 0) return undefined;
+  try {
+    const output = execSync(
+      `git log -1 --format=%cI -- ${allFiles.map((p) => `"${p}"`).join(" ")}`,
+      {
+        encoding: "utf-8",
+        timeout: 10000,
+        stdio: ["pipe", "pipe", "ignore"],
+      },
+    ).trim();
+    return output || undefined;
+  } catch {
+    return undefined;
+  }
 }
 
 export async function getAllArticleBundleLastModifiedIso(): Promise<
